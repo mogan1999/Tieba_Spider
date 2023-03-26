@@ -13,8 +13,7 @@ class TiebaSpider(scrapy.Spider):
     end_page = 9999
     filter = None
     see_lz = False
-    my_headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36'}
-    
+   
     def parse(self, response): #forum parser
         print("Crawling page %d..." % self.cur_page)
         for sel in response.xpath('//li[contains(@class, "j_thread_list")]'):
@@ -37,6 +36,7 @@ class TiebaSpider(scrapy.Spider):
             yield item
             meta = {'thread_id': data['id'], 'page': 1}
             url = 'http://tieba.baidu.com/p/%d' % data['id']
+            self.logger.warning(f'Extracted post URL: {url}')  # 添加日志记录
             if self.see_lz:
                 url += '?see_lz=1'
             yield scrapy.Request(url, callback = self.parse_post,  meta = meta, 
@@ -48,6 +48,8 @@ class TiebaSpider(scrapy.Spider):
                 yield scrapy.Request('http:'+next_page.extract_first())
             
     def parse_post(self, response): 
+        self.logger.warning(f"Processing post: {response.url}")
+        self.logger.warning(f"Started parsing post for thread {response.meta['thread_id']}")
         meta = response.meta
         has_comment = False
         for floor in response.xpath("//div[contains(@class, 'l_post')]"):
@@ -82,14 +84,12 @@ class TiebaSpider(scrapy.Spider):
             url = "http://tieba.baidu.com/p/totalComment?tid=%d&fid=1&pn=%d" % (meta['thread_id'], meta['page'])
             if self.see_lz:
                 url += '&see_lz=1'
-            yield scrapy.Request(url, callback = self.parse_totalComment, meta = meta, 
-                headers=self.my_headers)
+            yield scrapy.Request(url, callback = self.parse_totalComment, meta = meta)
         next_page = response.xpath(u".//ul[@class='l_posts_num']//a[text()='下一页']/@href")
         if next_page:
             meta['page'] += 1
             url = response.urljoin(next_page.extract_first())
-            yield scrapy.Request(url, callback = self.parse_post, meta = meta, 
-                headers=self.my_headers)
+            yield scrapy.Request(url, callback = self.parse_post, meta = meta)
 
     def parse_totalComment(self, response):
         meta = response.meta.copy()

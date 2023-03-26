@@ -10,7 +10,7 @@ import csv
 from io import open
 
 class config:
-    config_path = 'S:\pachong\Tieba_Spider\config.json'
+    config_path = 'config.json'
     config = None
 
     def __init__(self):
