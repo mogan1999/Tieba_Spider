@@ -1,16 +1,18 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 
+import csv
 import json
 import os
 import sys
-import MySQLdb
-import warnings
 import time
-import csv
+import warnings
 from io import open
 
+import MySQLdb
+
+
 class config:
-    config_path = 'S:\pachong\Tieba_Spider\config.json'
+    config_path = 'config.json'
     config = None
 
     def __init__(self):

@@ -1,15 +1,17 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 
 # Define your item pipelines here
 #
 # Don't forget to add your pipeline to the ITEM_PIPELINES setting
 # See: http://doc.scrapy.org/en/latest/topics/item-pipeline.html
 
-from twisted.enterprise import adbapi
+from urllib.parse import quote
+
 import MySQLdb
 import MySQLdb.cursors
-from six.moves.urllib.parse import quote
-from tieba.items import ThreadItem, PostItem, CommentItem
+from tieba.items import CommentItem, PostItem, ThreadItem
+from twisted.enterprise import adbapi
+
 
 class TiebaPipeline(object):
     @classmethod
@@ -43,8 +45,28 @@ class TiebaPipeline(object):
         "ALTER TABLE thread MODIFY create_time DATETIME NULL;"
         )
         query.addErrback(self._handle_error, "Failed to update database schema.")
-    
-    
+
+    def check_and_create_column(self):
+        conn = MySQLdb.connect(
+            host=self.settings['MYSQL_HOST'],
+            user=self.settings['MYSQL_USER'],
+            passwd=self.settings['MYSQL_PASSWD'],
+            db=self.settings['MYSQL_DBNAME'],
+            port=self.settings['MYSQL_PORT'],
+            charset='utf8mb4'
+        )
+
+        cursor = conn.cursor()
+        cursor.execute("SHOW COLUMNS FROM thread LIKE 'create_time'")
+        result = cursor.fetchone()
+
+        if result is None:
+            cursor.execute("ALTER TABLE thread ADD create_time DATETIME")
+            conn.commit()
+
+        cursor.close()
+        conn.close()
+
     def open_spider(self, spider):
         spider.cur_page = begin_page = self.settings['BEGIN_PAGE']
         spider.end_page = self.settings['END_PAGE']
@@ -59,7 +81,7 @@ class TiebaPipeline(object):
             start_url += '&tab=good'
         
         spider.start_urls = [start_url]
-        
+        spider.logger.info(f"Open spider: start_urls set to {start_url}")
     def close_spider(self, spider):
         self.settings['SIMPLE_LOG'].log(spider.cur_page - 1)
     
@@ -76,7 +98,7 @@ class TiebaPipeline(object):
     def insert_thread(self, tx, item):
         sql = "REPLACE INTO thread VALUES(%s, %s, %s, %s, %s, %s)"
         params = (item["id"], item["title"], item['author'], item['reply_num'], item['good'], item['create_time'])
-        tx.execute(sql, params)
+        tx.execute(sql, params)   
         
     def insert_post(self, tx, item):
         sql = "replace into post values(%s, %s, %s, %s, %s, %s, %s)"
@@ -94,48 +116,3 @@ class TiebaPipeline(object):
     def _handle_error(self, fail, item, spider):
         spider.logger.error('Insert to database error: %s \
         when dealing with item: %s' %(fail, item))
-
-    def check_and_create_column(self):
-        conn = MySQLdb.connect(
-            host=self.settings['MYSQL_HOST'],
-            user=self.settings['MYSQL_USER'],
-            passwd=self.settings['MYSQL_PASSWD'],
-            db=self.settings['MYSQL_DBNAME'],
-            port=self.settings['MYSQL_PORT'],
-            charset='utf8mb4'
-        )
-
-        cursor = conn.cursor()
-        
-        cursor.execute("SHOW COLUMNS FROM thread LIKE 'create_time'")
-        result = cursor.fetchone()
-
-        if result is None:
-            cursor.execute("ALTER TABLE thread ADD create_time DATETIME")
-            conn.commit()
-        
-        # 添加以下代码来设置主键
-        cursor.execute("SHOW KEYS FROM thread WHERE Key_name = 'PRIMARY'")
-        result = cursor.fetchone()
-
-        if result is None:
-            cursor.execute("ALTER TABLE thread ADD PRIMARY KEY (id)")
-            conn.commit()
-
-        # 对于 post 和 comment 表，执行类似的操作
-        cursor.execute("SHOW KEYS FROM post WHERE Key_name = 'PRIMARY'")
-        result = cursor.fetchone()
-
-        if result is None:
-            cursor.execute("ALTER TABLE post ADD PRIMARY KEY (id)")
-            conn.commit()
-
-        cursor.execute("SHOW KEYS FROM comment WHERE Key_name = 'PRIMARY'")
-        result = cursor.fetchone()
-
-        if result is None:
-            cursor.execute("ALTER TABLE comment ADD PRIMARY KEY (id)")
-            conn.commit()
-
-        cursor.close()
-        conn.close()

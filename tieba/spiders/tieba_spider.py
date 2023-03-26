@@ -1,11 +1,14 @@
 # -*- coding: utf-8 -*-
 
-import scrapy
 import json
-from tieba.items import ThreadItem, PostItem, CommentItem
-from . import helper
 import time
 from math import ceil
+
+import scrapy
+from tieba.items import CommentItem, PostItem, ThreadItem
+
+from . import helper
+
 
 class TiebaSpider(scrapy.Spider):
     name = "tieba"
@@ -35,7 +38,7 @@ class TiebaSpider(scrapy.Spider):
             #filter过滤掉的帖子及其回复均不存入数据库
                 
             yield item
-            meta = {'thread_id': data['id'], 'page': 1}
+            meta = {'thread_id': data['id'], 'page': 1, 'thread_item': item}
             url = 'http://tieba.baidu.com/p/%d' % data['id']
             if self.see_lz:
                 url += '?see_lz=1'

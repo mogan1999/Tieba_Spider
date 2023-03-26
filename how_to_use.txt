@@ -1,0 +1,6 @@
+先试用screen开一个能托管的窗口再进行下面的操作，screen使用方法见https://blog.csdn.net/weixin_48704094/article/details/126599244
+
+运行generate_sh.py后会生成一个sh批处理文件，对批处理文件运行以下命令进行权限修改
+chmod 740 你的sh文件名称
+
+然后再输入/bin/bash ./getdata2023xxxx.sh运行sh文件，第一次爬取完毕后用screen最小化窗口即可走人

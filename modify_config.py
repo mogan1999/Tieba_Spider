@@ -4,7 +4,7 @@ import sys
 university = sys.argv[1]
 
 # 读取 json 文件
-with open('config.json', 'r+', encoding='utf-8') as f:
+with open('config.json', 'r+', encoding='utf-8', newline='') as f:
     config = json.load(f)
     # 清空字典
     config['MYSQL_DBNAME'] = {}
