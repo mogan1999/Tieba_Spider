@@ -1,0 +1,1 @@
+scrapy run 厦门大学 厦门大学data -p 1 2
