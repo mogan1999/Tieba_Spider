@@ -15,6 +15,7 @@ class ThreadItem(scrapy.Item):
     author = scrapy.Field()
     reply_num = scrapy.Field()
     good = scrapy.Field()
+    create_time = scrapy.Field()
     
 class PostItem(scrapy.Item):
     name = 'post'

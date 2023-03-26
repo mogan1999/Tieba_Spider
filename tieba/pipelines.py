@@ -38,6 +38,13 @@ class TiebaPipeline(object):
         )
         self.check_and_create_column()
         
+    def update_database_schema(self):
+        query = self.dbpool.runOperation(
+        "ALTER TABLE thread MODIFY create_time DATETIME NULL;"
+        )
+        query.addErrback(self._handle_error, "Failed to update database schema.")
+    
+    
     def open_spider(self, spider):
         spider.cur_page = begin_page = self.settings['BEGIN_PAGE']
         spider.end_page = self.settings['END_PAGE']
@@ -67,9 +74,9 @@ class TiebaPipeline(object):
         return item
         
     def insert_thread(self, tx, item):
-        sql = "replace into thread values(%s, %s, %s, %s, %s)"
-        params = (item["id"], item["title"], item['author'], item['reply_num'], item['good'])
-        tx.execute(sql, params)     
+        sql = "REPLACE INTO thread VALUES(%s, %s, %s, %s, %s, %s)"
+        params = (item["id"], item["title"], item['author'], item['reply_num'], item['good'], item['create_time'])
+        tx.execute(sql, params)
         
     def insert_post(self, tx, item):
         sql = "replace into post values(%s, %s, %s, %s, %s, %s, %s)"
@@ -99,7 +106,14 @@ class TiebaPipeline(object):
         )
 
         cursor = conn.cursor()
+        
+        cursor.execute("SHOW COLUMNS FROM thread LIKE 'create_time'")
+        result = cursor.fetchone()
 
+        if result is None:
+            cursor.execute("ALTER TABLE thread ADD create_time DATETIME")
+            conn.commit()
+        
         # 添加以下代码来设置主键
         cursor.execute("SHOW KEYS FROM thread WHERE Key_name = 'PRIMARY'")
         result = cursor.fetchone()

@@ -29,6 +29,7 @@ class TiebaSpider(scrapy.Spider):
             if not item['good']:
                 item['good'] = False
             item['title'] = sel.xpath('.//div[contains(@class, "threadlist_title")]/a/@title').extract_first()
+            item['create_time'] = None
             if self.filter and not self.filter(item["id"], item["title"], item['author'], item['reply_num'], item['good']):
                 continue
             #filter过滤掉的帖子及其回复均不存入数据库
@@ -72,6 +73,10 @@ class TiebaSpider(scrapy.Spider):
                     item['time'] = floor.xpath(".//span[@class='tail-info']")\
                     .re_first(r'\d{4}-\d{2}-\d{2} \d{2}:\d{2}')
                 yield item
+                if data['content']['post_no'] == 1:  # 楼主的回复
+                    thread_item = response.meta['thread_item']  # 从meta中获取ThreadItem
+                    thread_item['create_time'] = item['time']
+                    yield thread_item
 
         if has_comment:
             url = "http://tieba.baidu.com/p/totalComment?tid=%d&fid=1&pn=%d" % (meta['thread_id'], meta['page'])
