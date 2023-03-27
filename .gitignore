@@ -152,3 +152,5 @@ cython_debug/
 #.idea/
 
 /*.bat
+available_proxies.txt
+proxies.txt
