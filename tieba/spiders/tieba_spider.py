@@ -39,13 +39,12 @@ class TiebaSpider(scrapy.Spider):
             self.logger.warning(f'Extracted post URL: {url}')  # 添加日志记录
             if self.see_lz:
                 url += '?see_lz=1'
-            yield scrapy.Request(url, callback = self.parse_post,  meta = meta, 
-                headers=self.my_headers)
+            yield scrapy.Request(url, callback = self.parse_post,  meta = meta)
         next_page = response.xpath('//a[@class="next pagination-item "]/@href')
         self.cur_page += 1
         if next_page:
             if self.cur_page <= self.end_page:
-                yield scrapy.Request('http:'+next_page.extract_first())
+                yield scrapy.Request('http:'+next_page.extract_first(), callback=self.parse, priority=-1)
             
     def parse_post(self, response): 
         self.logger.warning(f"Processing post: {response.url}")
