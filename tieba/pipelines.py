@@ -8,7 +8,7 @@
 from twisted.enterprise import adbapi
 import MySQLdb
 import MySQLdb.cursors
-from six.moves.urllib.parse import quote
+from urllib.parse import quote
 from tieba.items import ThreadItem, PostItem, CommentItem
 
 class TiebaPipeline(object):

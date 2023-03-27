@@ -81,13 +81,11 @@ class TiebaSpider(scrapy.Spider):
             item['create_time'] = None
             if self.filter and not self.filter(item["id"], item["title"], item['author'], item['reply_num'], item['good']):
                 continue
-            # 这里调用should_request_thread方法
-            if not self.should_request_thread(item['id'], item['reply_num']):
-                continue
+
             #filter过滤掉的帖子及其回复均不存入数据库
                 
             yield item
-            meta = {'thread_id': data['id'], 'page': 1}
+            meta = {'thread_id': data['id'], 'page': 1, 'thread_item': item}
             url = 'http://tieba.baidu.com/p/%d' % data['id']
             if self.see_lz:
                 url += '?see_lz=1'
