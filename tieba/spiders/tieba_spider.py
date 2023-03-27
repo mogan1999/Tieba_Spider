@@ -3,17 +3,62 @@
 import scrapy
 import json
 from tieba.items import ThreadItem, PostItem, CommentItem
+from tieba.pipelines import TiebaPipeline
 from . import helper
 import time
 from math import ceil
-
+import MySQLdb
 class TiebaSpider(scrapy.Spider):
+
     name = "tieba"
     cur_page = 1    #modified by pipelines (open_spider)
     end_page = 9999
     filter = None
     see_lz = False
     my_headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36'}
+    
+
+    def check_existing_thread(self, thread_id, reply_num):
+        conn = MySQLdb.connect(
+            host=self.settings['MYSQL_HOST'],
+            user=self.settings['MYSQL_USER'],
+            passwd=self.settings['MYSQL_PASSWD'],
+            db=self.settings['MYSQL_DBNAME'],
+            port=self.settings['MYSQL_PORT'],
+            charset='utf8mb4'
+        )
+        cursor = conn.cursor()
+        cursor.execute("SELECT reply_num, COUNT(*) AS post_count, create_time FROM thread LEFT JOIN post ON thread.id=post.thread_id WHERE thread.id=%s GROUP BY thread.id HAVING create_time IS NOT NULL", (thread_id,))
+        result = cursor.fetchone()
+        cursor.close()
+        conn.close()
+
+        if result:
+            existing_reply_num, post_count, create_time = result
+            return existing_reply_num == reply_num and post_count == reply_num and create_time is not None
+        return False
+
+    def check_existing_post(self, post_id, comment_num):
+        conn = MySQLdb.connect(
+            host=self.settings['MYSQL_HOST'],
+            user=self.settings['MYSQL_USER'],
+            passwd=self.settings['MYSQL_PASSWD'],
+            db=self.settings['MYSQL_DBNAME'],
+            port=self.settings['MYSQL_PORT'],
+            charset='utf8mb4'
+        )
+        cursor = conn.cursor()
+        cursor.execute("SELECT comment_num, COUNT(*) AS comment_count FROM post LEFT JOIN comment ON post.id=comment.post_id WHERE post.id=%s GROUP BY post.id", (post_id,))
+        result = cursor.fetchone()
+        cursor.close()
+        conn.close()
+
+        if result:
+            existing_comment_num, comment_count = result
+            return existing_comment_num == comment_num and comment_count == comment_num
+        return False
+
+
     
     def parse(self, response): #forum parser
         print("Crawling page %d..." % self.cur_page)
@@ -25,12 +70,19 @@ class TiebaSpider(scrapy.Spider):
             item['id'] = data['id']
             item['author'] = data['author_name']
             item['reply_num'] = data['reply_num']
+            # 检查是否存在满足给定条件的thread(不需要再爬取)
+            if self.check_existing_thread(item["id"], item["reply_num"]):
+                print("Thread %d already exists, skip." % item["id"])
+                continue
             item['good'] = data['is_good']
             if not item['good']:
                 item['good'] = False
             item['title'] = sel.xpath('.//div[contains(@class, "threadlist_title")]/a/@title').extract_first()
             item['create_time'] = None
             if self.filter and not self.filter(item["id"], item["title"], item['author'], item['reply_num'], item['good']):
+                continue
+            # 这里调用should_request_thread方法
+            if not self.should_request_thread(item['id'], item['reply_num']):
                 continue
             #filter过滤掉的帖子及其回复均不存入数据库
                 
@@ -57,6 +109,10 @@ class TiebaSpider(scrapy.Spider):
                 item['id'] = data['content']['post_id']
                 item['author'] = data['author']['user_name']
                 item['comment_num'] = data['content']['comment_num']
+                # 检查是否存在满足给定条件的post
+                if self.check_existing_post(item["id"], item["comment_num"]):
+                    print("Post %d already exists, skip." % item["id"])
+                    continue
                 if item['comment_num'] > 0:
                     has_comment = True
                 content = floor.xpath(".//div[contains(@class,'j_d_post_content')]").extract_first()

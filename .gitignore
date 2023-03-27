@@ -154,3 +154,4 @@ cython_debug/
 /*.bat
 available_proxies.txt
 proxies.txt
+*.bat
