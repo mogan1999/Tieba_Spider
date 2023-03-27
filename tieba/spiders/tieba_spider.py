@@ -103,12 +103,12 @@ class TiebaSpider(scrapy.Spider):
                 item['id'] = data['content']['post_id']
                 item['author'] = data['author']['user_name']
                 item['comment_num'] = data['content']['comment_num']
-                if item['comment_num'] > 0:
-                    has_comment = True
-                # 检查是否存在满足给定条件的post
+                # 检查是否存在满足给定条件的post(该post的comment_num字段与数据库中的comment_num字段相等)
                 if self.check_existing_post(item["id"], item["comment_num"]):
                     continue
-
+                
+                if item['comment_num'] > 0:
+                    has_comment = True
                 content = floor.xpath(".//div[contains(@class,'j_d_post_content')]").extract_first()
                 #以前的帖子, data-field里面没有content
                 item['content'] = helper.parse_content(content)
