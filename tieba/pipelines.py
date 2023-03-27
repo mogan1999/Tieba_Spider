@@ -57,11 +57,35 @@ class TiebaPipeline(object):
         )
 
         cursor = conn.cursor()
+        
         cursor.execute("SHOW COLUMNS FROM thread LIKE 'create_time'")
         result = cursor.fetchone()
 
         if result is None:
             cursor.execute("ALTER TABLE thread ADD create_time DATETIME")
+            conn.commit()
+        
+        # 添加以下代码来设置主键
+        cursor.execute("SHOW KEYS FROM thread WHERE Key_name = 'PRIMARY'")
+        result = cursor.fetchone()
+
+        if result is None:
+            cursor.execute("ALTER TABLE thread ADD PRIMARY KEY (id)")
+            conn.commit()
+
+        # 对于 post 和 comment 表，执行类似的操作
+        cursor.execute("SHOW KEYS FROM post WHERE Key_name = 'PRIMARY'")
+        result = cursor.fetchone()
+
+        if result is None:
+            cursor.execute("ALTER TABLE post ADD PRIMARY KEY (id)")
+            conn.commit()
+
+        cursor.execute("SHOW KEYS FROM comment WHERE Key_name = 'PRIMARY'")
+        result = cursor.fetchone()
+
+        if result is None:
+            cursor.execute("ALTER TABLE comment ADD PRIMARY KEY (id)")
             conn.commit()
 
         cursor.close()
