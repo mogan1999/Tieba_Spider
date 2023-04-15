@@ -23,12 +23,13 @@ with open(f'getdata{date_str}.sh', 'w', encoding='utf-8', newline='') as f:
     # 添加激活虚拟环境的代码
     f.write('#!/bin/bash\n')
     f.write('source /usr/local/anaconda3/bin/activate tieba\n\n')
-    f.write('cd /home/raoziyang/github/Tieba_Spider\n\n')
-    for command in commands:
-        f.write(f'{command}\n')  # 写入命令
-        wait_time = random.randint(3600, 3800)  # 生成3600-4000之间的随机整数
-        f.write(f'echo current task finished at:\n')
-        f.write(f'date\n')
-        f.write(f'echo "waiting {wait_time}s for next task......"\n') # 打印语句
-        f.write(f'sleep {wait_time}\n')  # 使用 sleep 命令等待随机整数秒
+    f.write('cd /home/raoziyang/Tieba_Spider\n\n')
+    for i in range(2):
+        for command in commands:
+            f.write(f'{command}\n')  # 写入命令
+            wait_time = random.randint(7200, 7300)  # 生成3600-4000之间的随机整数
+            f.write(f'echo current task finished at:\n')
+            f.write(f'date\n')
+            f.write(f'echo "waiting {wait_time}s for next task......"\n') # 打印语句
+            f.write(f'sleep {wait_time}\n')  # 使用 sleep 命令等待随机整数秒
     f.write('echo "all done"\n')
