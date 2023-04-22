@@ -1,7 +1,7 @@
 import re
 import json
 from io import open
-emotion_data = json.loads(open('S:\pachong\Tieba_Spider\emotion.json','r',encoding='utf8').read())
+emotion_data = json.loads(open('emotion.json','r',encoding='utf8').read())
 
 def get_text(url):
     for data in emotion_data:
